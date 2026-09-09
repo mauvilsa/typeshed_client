@@ -1,6 +1,7 @@
 """This module is responsible for finding stub files."""
 
 import ast
+import importlib.resources
 import json
 import os
 import subprocess
@@ -10,7 +11,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple, NewType, Optional, Union
 
-import importlib_resources
 from typing_extensions import deprecated
 
 PythonVersion = tuple[int, int]
@@ -33,6 +33,8 @@ class SearchContext(NamedTuple):
     platform: str
     raise_on_warnings: bool = False
     allow_py_files: bool = False
+    implementation_name: str = sys.implementation.name
+    implementation_version: PythonVersion = sys.implementation.version[:2]
 
     def is_python2(self) -> bool:
         return self.version[0] == 2
@@ -47,6 +49,8 @@ def get_search_context(
     platform: str = sys.platform,
     raise_on_warnings: bool = False,
     allow_py_files: bool = False,
+    implementation_name: str = sys.implementation.name,
+    implementation_version: PythonVersion = sys.implementation.version[:2],
 ) -> SearchContext:
     """Return a context for finding stubs. This context can be passed to other
     functions in this file.
@@ -61,6 +65,10 @@ def get_search_context(
     - version: Version of Python to use, as a two-tuple like (3, 9).
     - platform: Value to use for sys.platform in stubs, defaulting to the current
       process's value.
+    - implementation_name: Value to use for sys.implementation.name in stubs, defaulting
+      to the current process's value.
+    - implementation_version: Value to use for sys.implementation.version in stubs,
+      defaulting to the current process's value.
     - raise_on_warnings: Raise an error for any warnings encountered by the parser.
     - allow_py_files: Search for names in .py files on the path.
 
@@ -86,6 +94,8 @@ def get_search_context(
         platform=platform,
         raise_on_warnings=raise_on_warnings,
         allow_py_files=allow_py_files,
+        implementation_name=implementation_name,
+        implementation_version=implementation_version,
     )
 
 
@@ -381,7 +391,7 @@ def _find_file_in_dir(
 
 
 def find_typeshed() -> Path:
-    path = importlib_resources.files("typeshed_client") / "typeshed"
+    path = importlib.resources.files("typeshed_client") / "typeshed"
     assert isinstance(path, Path), repr(path)
     return path
 
